@@ -1,19 +1,25 @@
 #Uses tweepy api to extract tweets with certain keywords or hashtags https://github.com/tweepy/tweepy
-import time, tweepy
-from tweepy import Stream
-from tweepy import OAuthHandler
+import time, argparse
+from tweepy import Stream, OAuthHandler, API
 from tweepy.streaming import StreamListener
 
-#OAuth information from Twitter API
-consumer_key = input('Consumer key: ')
-consumer_secret = input('Consumer secret: ')
-access_token = input('Access token: ')
-access_secret = input('Access secret: ')
+#OAuth information for Twitter API
 
-auth = OAuthHandler(consumer_key, consumer_secret)
-auth.set_access_token(access_token, access_secret)
+#Default if auth_api isn't called
+api = API()
 
-api = tweepy.API(auth)
+def auth_api(consumer_key, consumer_secret, access_token, access_secret):
+    auth = OAuthHandler(consumer_key, consumer_secret)
+    auth.set_access_token(access_token, access_secret)
+    api = API(auth)
+    return auth
+
+def auth_stdin():
+    c_key = input('Consumer key: ')
+    c_secret = input('Consumer secret: ')
+    a_token = input('Access token: ')
+    a_secret = input('Access secret: ')
+    return auth_api(c_key, c_secret, a_token, a_secret)
 
 class Listener(StreamListener):
     def on_data(self, data):
@@ -48,7 +54,19 @@ def on_error(self, status):
         # returning False in on_data disconnects the stream
         return False
 
+if __name__=="__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-ck", "--c_key", help="Consumer Key")
+    parser.add_argument("-cs", "--c_secret", help="Consumer Secret")
+    parser.add_argument("-at", "--a_token", help="Access Token")
+    parser.add_argument("-ak", "--a_key", help="Access Key")
+    parser.add_argument("-k", "--keyword", default = 'Hello World', help="Keyword to track (default: 'Hello World')")
 
-twitter_stream = Stream(auth, Listener())
-#List of keywords to filter and track
-twitter_stream.filter(track=['Fortnite','Epic Games'])
+    args = parser.parse_args()
+    if (args['ck'] and args['cs'] and args['at'] and args['ak']):
+        auth = auth_api(args['ck'], args['cs'], args['at'], args['ak'])
+    else:
+        auth = auth_stdin()
+    twitter_stream = Stream(auth, Listener())
+    #List of keywords to filter and track
+    twitter_stream.filter(track=args['keyword'])
